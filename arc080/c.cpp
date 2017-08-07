@@ -21,84 +21,41 @@
 
 using namespace std;
 
-const int inf = 1<<29;
-
-struct SegTree{
-    int size;
-    vector<pair<int, int> > data;
-    SegTree(const vector<int> &orig){
-        size = 1;
-        while(size<(int)orig.size())size = size<<1;
-        data.assign(2*size-1, make_pair(inf, -1));
-        REP(i,orig.size()){
-            data[i+size-1] = make_pair(orig[i], i);
-        }
-        for(int i=size-2; i>=0; i--){
-            data[i] = min(data[2*i+1], data[2*i+2]);
-        }
-    }
-    pair<int,int> query(int a,int b)const{return query(a,b,0,0,size);}
-    pair<int,int> query(int a,int b,int k,int l,int r)const{
-        if(b<=l || r<=a)return make_pair(inf, -1);
-        if(a<=l && r<=b)return data[k];
-        int mid = (l+r)>>1;
-        return min(query(a,b,2*k+1,l,mid),query(a,b,2*k+2,mid,r));
-    }
-};
-
-struct Interval{
-    int l, r;
-    pair<int,int> p;
-    Interval(int _l, int _r, pair<int,int> _p){
-        this->l = _l;
-        this->r = _r;
-        this->p = _p;
-    }
-    bool operator<(const Interval &i)const{
-        return this->p > i.p;
-    }
-};
-
-pair<int,int> get(int l, int r, const SegTree &even, const SegTree &odd){
-    return (l%2==0 ? even.query(l, r) : odd.query(l, r));
-}
-
-void push(int l, int r, priority_queue<Interval> &que, const SegTree &even, const SegTree &odd){
-    if(l==r)return;
-    pair<int,int> p = get(l, r, even, odd);
-    que.push(Interval(l, r, p));
-}
-
 int main(){
     int N;
     cin >> N;
-    vector<int> _even(N, inf);
-    vector<int> _odd(N, inf);
+    vector<int> A(N);
+    REP(i, N)cin >> A[i];
+    vector<int> B(3, 0);
     REP(i, N){
-        int p;
-        cin >> p;
-        if(i%2==0){
-            _even[i] = p;
-        }else{
-            _odd[i] = p;
+        int c = 0;
+        while(A[i]%2==0){
+            c++;
+            A[i] /= 2;
+        }
+        c = min(2, c);
+        B[c]++;
+    }
+    vector<int> C(N, -1);
+    REP(i, B[0]){
+        if(2*i>=N)continue;
+        C[2*i] = 0;
+    }
+    REP(i, N){
+        if(C[i]!=-1)continue;
+        if(B[2]){
+            C[i] = 2;
+            B[2]--;
+        }else if(B[1]){
+            C[i] = 1;
+            B[1]--;
         }
     }
-    SegTree even(_even);
-    SegTree odd(_odd);
-    vector<int> res;
-    priority_queue<Interval> que;
-    que.push(Interval(0, N, even.query(0, N)));
-    while(!que.empty()){
-        Interval it = que.top();que.pop();
-        int left = it.p.second;
-        pair<int,int> p = get(left+1, it.r, even, odd);
-        int right = p.second;
-        push(it.l, left, que, even, odd);
-        push(left+1, right, que, even, odd);
-        push(right+1, it.r, que, even, odd);
-        res.push_back(it.p.first);
-        res.push_back(p.first);
+    bool ok = true;
+    REP(i, N-1){
+        if(C[i]==-1 || C[i+1]==-1)ok = false;
+        if(C[i]+C[i+1]<2)ok = false;
     }
-    REP(i, N)cout << res[i] << (i==N-1 ? '\n' : ' ');
+    cout << (ok ? "Yes" : "No") << endl;
     return 0;
 }
